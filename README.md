@@ -9,6 +9,6 @@ make
 ## Controls
 
 - mouse: look arround
-- `w`, `a`, `s`, d`: move
+- `w`, `a`, `s`, `d`: move
 - `<shift>`: run
 - `<space>`: look back
