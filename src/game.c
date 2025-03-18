@@ -11,15 +11,17 @@ void init_opengl(Game* game);
 
 void init_game(Game* game, Uint32 width, Uint32 height)
 {
-	game->is_running = false;
+	memzero(game, sizeof *game);
 	game->width = width;
 	game->height = height;
+
 	if (init_sdl(game) != 0) {
 		return;
 	}
 	init_opengl(game);
 	game->last_update_time = (double)SDL_GetTicks() / 1000;
 	game->is_running = true;
+	game->camera.run_limit = MAX_RUN_LIMIT;
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
@@ -46,25 +48,17 @@ void destroy_game(Game* game)
 	SDL_Quit();
 }
 
-void move_camera(Game* game) {
-	float speed = 0.1f;
-	const Uint8* keystate = SDL_GetKeyboardState(NULL);
+static void handle_mouse_motion(Game* game, SDL_Event const* event)
+{
+	const float sensitivity = 0.1f;
+	game->camera.yaw   -= event->motion.xrel * sensitivity;
+	game->camera.yaw    = fmodf(game->camera.yaw, 360.0f); // restrivt to circle
+	game->camera.pitch -= event->motion.yrel * sensitivity;
 
-	Camera* cam = &game->camera;
-
-	if (keystate[SDL_SCANCODE_LSHIFT]) {
-		speed *= 2.0f;
-	}
-
-	const float dx = cosf(degree_to_radian(cam->yaw)) * speed;
-	const float dz = sinf(degree_to_radian(cam->yaw)) * speed;
-
-	if (keystate[SDL_SCANCODE_D]) { cam->x += dx; cam->z -= dz; }
-	if (keystate[SDL_SCANCODE_S]) { cam->x += dz; cam->z += dx; }
-	if (keystate[SDL_SCANCODE_A]) { cam->x -= dx; cam->z += dz; }
-	if (keystate[SDL_SCANCODE_W]) { cam->x -= dz; cam->z -= dx; }
+	// restrict pitch to [-89°, 89°]
+	if (game->camera.pitch > +89.0f) game->camera.pitch = +89.0f;
+	if (game->camera.pitch < -89.0f) game->camera.pitch = -89.0f;
 }
-
 
 void handle_game_events(Game* game)
 {
@@ -75,35 +69,29 @@ void handle_game_events(Game* game)
 		}
 
 		if (event.type == SDL_MOUSEMOTION) {
-			const float sensitivity = 0.1f;
-			game->camera.yaw   -= event.motion.xrel * sensitivity;
-			game->camera.pitch -= event.motion.yrel * sensitivity;
-
-			// restrict pitch to [-89°, 89°]
-			if (game->camera.pitch > +89.0f) game->camera.pitch = +89.0f;
-			if (game->camera.pitch < -89.0f) game->camera.pitch = -89.0f;
+			handle_mouse_motion(game, &event);
 		}
 	}
 }
 
 void update_game(Game* game)
 {
-	printf("Game running: %d | Camera: x=%.2f y=%.2f z=%.2f yaw=%.2f pitch=%.2f\n",
+	// debug only
+	printf("Game running: %d | Camera: x=%.2f y=%.2f z=%.2f yaw=%.2f pitch=%.2f | Run limit: %u\n",
 		game->is_running, game->camera.x, game->camera.y, game->camera.z,
-		game->camera.yaw, game->camera.pitch
+		game->camera.yaw, game->camera.pitch,
+		game->camera.run_limit
 	);
 
-	double current_time;
-	double elapsed_time;
+	const double current_time = (double) SDL_GetTicks64() / 1000;
+	const double elapsed_time = current_time - game->last_update_time;;
 
-	current_time = (double)SDL_GetTicks() / 1000;
-	elapsed_time = current_time - game->last_update_time;
 	game->last_update_time = current_time;
 
-	move_camera(game);
+	move_camera(&game->camera);
 }
 
-void draw_cube(float x, float y, float z, float size) {
+static void draw_cube(float x, float y, float z, float size) {
 	float half = size / 2.0f;
 
 	glBegin(GL_QUADS);
@@ -153,7 +141,7 @@ void draw_cube(float x, float y, float z, float size) {
 	glEnd();
 }
 
-void draw_cubes() {
+static void draw_cubes() {
 	for (int x = -2; x <= 2; x++) {
 		for (int y = -2; y <= 2; y++) {
 			draw_cube(x * 2.5f, y * 2.5f, -10.0f, 2.0f);
@@ -213,7 +201,7 @@ static int init_sdl(Game* game) {
 	return 0;
 }
 
-void setup_lighting() {
+static void setup_lighting() {
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
@@ -230,8 +218,7 @@ void setup_lighting() {
 }
 
 
-static
-void init_opengl(Game* game)
+static void init_opengl(Game* game)
 {
 	glEnable(GL_DEPTH_TEST);
 

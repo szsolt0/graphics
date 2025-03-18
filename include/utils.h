@@ -22,3 +22,21 @@ double degree_to_radian(double degree)
 {
 	return degree * M_PI / 180.0;
 }
+
+static inline
+void* memzero(void* ptr, size_t len)
+{
+	return memset(ptr, 0, len);
+}
+
+static inline
+Uint32 min_u32(Uint32 a, Uint32 b)
+{
+	return (a < b) ? a : b;
+}
+
+static inline
+Uint32 max_u32(Uint32 a, Uint32 b)
+{
+	return (a > b) ? a : b;
+}

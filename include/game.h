@@ -4,11 +4,7 @@
 #include <GL/gl.h>
 #include <stdbool.h>
 #include <stdint.h>
-
-typedef struct Camera {
-	float x, y, z;
-	float yaw, pitch; // in degrees
-} Camera;
+#include "camera.h"
 
 typedef struct Game
 {
@@ -18,7 +14,6 @@ typedef struct Game
 	Uint32 width;
 	Uint32 height;
 	Camera camera;
-	GLuint shader_program;
 	bool is_running;
 } Game;
 
