@@ -1,7 +1,10 @@
 #include "game.h"
 #include "utils.h"
-#include <stdio.h>
+#include <walls.h>
+
 #include <GL/gl.h>
+
+#include <stdio.h>
 
 static
 int init_sdl(Game* game);
@@ -20,19 +23,33 @@ void init_game(Game* game, Uint32 width, Uint32 height)
 	}
 	init_opengl(game);
 	game->last_update_time = (double)SDL_GetTicks() / 1000;
-	game->is_running = true;
 	game->camera.run_limit = MAX_RUN_LIMIT;
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
+	game->sprint_bar = IMG_LoadTexture(game->renderer, "assets/run_limit.png");
+	if (!game->sprint_bar) {
+		fprintf(stderr, "[ERROR] sprint_bar texture load failed: %s\n", SDL_GetError());
+		return;
+	}
+
 	if (!game->window) {
 		fprintf(stderr, "[ERROR] SDL_Window creation failed: %s\n", SDL_GetError());
+		return;
 	}
 	if (!game->gl_context) {
 		fprintf(stderr, "[ERROR] SDL_GL context creation failed: %s\n", SDL_GetError());
+		return;
 	}
 
-	memset(&game->camera, 0, sizeof game->camera);
+	const ssize_t walls_len = load_walls(&game->walls, &game->wall_texture, "asd.txt");
+	if (walls_len < 0) {
+		fprintf(stderr, "[ERROR] loading walls from '%s' failed\n", "asd.txt");
+		return;
+	}
+	game->walls_len = walls_len;
+
+	game->is_running = true;
 }
 
 void destroy_game(Game* game)
@@ -52,7 +69,7 @@ static void handle_mouse_motion(Game* game, SDL_Event const* event)
 {
 	const float sensitivity = 0.1f;
 	game->camera.yaw   -= event->motion.xrel * sensitivity;
-	game->camera.yaw    = fmodf(game->camera.yaw, 360.0f); // restrivt to circle
+	game->camera.yaw    = fmodf(game->camera.yaw, 360.0f); // restrict to circle
 	game->camera.pitch -= event->motion.yrel * sensitivity;
 
 	// restrict pitch to [-89°, 89°]
@@ -77,7 +94,7 @@ void handle_game_events(Game* game)
 void update_game(Game* game)
 {
 	// debug only
-	printf("Game running: %d | Camera: x=%.2f y=%.2f z=%.2f yaw=%.2f pitch=%.2f | Run limit: %u\n",
+	printf("Game running: %d | Camera: x=%.2f y=%.2f z=%.2f yaw=%.2f pitch=%.2f run_limit: %u\n",
 		game->is_running, game->camera.x, game->camera.y, game->camera.z,
 		game->camera.yaw, game->camera.pitch,
 		game->camera.run_limit
@@ -168,7 +185,8 @@ void render_game(Game* game)
 	glRotatef(-game->camera.yaw + extra_yaw, 0.0f, 1.0f, 0.0f);
 	glTranslatef(-game->camera.x, -game->camera.y, -game->camera.z);
 
-	draw_cubes();
+	//draw_cubes();
+	render_walls(game->walls, game->walls_len, game->wall_texture);
 
 	SDL_GL_SwapWindow(game->window);
 }
@@ -197,6 +215,12 @@ static int init_sdl(Game* game) {
 		return 1;
 	}
 
+	game->renderer = SDL_CreateRenderer(game->window, -1, 0);
+	if (!game->renderer) {
+		fprintf(stderr, "[ERROR] SDL_Renderer creation failed: %s\n", SDL_GetError());
+		return 1;
+	}
+
 	SDL_GL_SetSwapInterval(1); // VSync
 	return 0;
 }
@@ -221,8 +245,9 @@ static void setup_lighting() {
 static void init_opengl(Game* game)
 {
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_TEXTURE_2D);
 
-	setup_lighting();
+	//setup_lighting();
 
 
 	glClearColor(0.1, 0.1, 0.1, 1.0);

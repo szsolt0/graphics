@@ -1,7 +1,12 @@
 #pragma once
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
 #include <math.h>
+
+#define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 
 typedef struct vec3
 {
@@ -30,13 +35,26 @@ void* memzero(void* ptr, size_t len)
 }
 
 static inline
-Uint32 min_u32(Uint32 a, Uint32 b)
+uint32_t min_u32(uint32_t a, uint32_t b)
 {
 	return (a < b) ? a : b;
 }
 
 static inline
-Uint32 max_u32(Uint32 a, Uint32 b)
+uint32_t max_u32(uint32_t a, uint32_t b)
 {
 	return (a > b) ? a : b;
+}
+
+
+static inline
+bool likely(bool x)
+{
+	return __builtin_expect(x, true);
+}
+
+static inline
+bool unlikely(bool x)
+{
+	return __builtin_expect(x, false);
 }

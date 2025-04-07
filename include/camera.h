@@ -1,7 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 
-static const Uint32 MAX_RUN_LIMIT = 200;
+static const Uint32 MAX_RUN_LIMIT = 200000;
 
 typedef struct Camera {
 	float x, y, z;

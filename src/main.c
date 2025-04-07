@@ -1,9 +1,10 @@
-#include "game.h"
+#include <game.h>
+
 #include <unistd.h>
 
 int main(int argc, char* argv[])
 {
-	Game game = create_game(800, 600);
+	Game game = create_game(1200, 900);
 
 	while (likely(game.is_running)) {
 		handle_game_events(&game);

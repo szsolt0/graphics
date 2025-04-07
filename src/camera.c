@@ -9,7 +9,7 @@ void move_camera(Camera* cam) {
 	const Uint8* keystate = SDL_GetKeyboardState(NULL);
 
 	if (cam->run_limit > 0 && keystate[SDL_SCANCODE_LSHIFT]) {
-		speed *= 2.5f;
+		speed *= 10.0f;
 		cam->run_limit -= 1;
 	}
 

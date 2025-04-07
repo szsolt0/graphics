@@ -1,2 +1,7 @@
-assets/*
-.vscode/*
+*
+!src/*
+!include/*
+!docs/*
+!.gitignore
+!Makefile
+!README.md
