@@ -105,8 +105,6 @@ void update_game(Game* game)
 	const double elapsed_time = current_time - game->last_update_time;;
 
 	game->last_update_time = current_time;
-
-	update_camera(&game->camera);
 }
 
 
@@ -117,15 +115,7 @@ void render_game(Game* game)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	const Uint8* keystate = SDL_GetKeyboardState(NULL);
-	const bool space = keystate[SDL_SCANCODE_SPACE];
-	const float extra_yaw = space ? 180.0f : 0.0f;
-
-	// camera view
-	glRotatef(-game->camera.pitch, 1.0f, 0.0f, 0.0f);
-	glRotatef(-game->camera.yaw + extra_yaw, 0.0f, 1.0f, 0.0f);
-	glTranslatef(-game->camera.x, -game->camera.y, -game->camera.z);
-
+	update_camera(&game->camera);
 	render_walls(game->walls, game->walls_len, game->wall_texture);
 
 	SDL_GL_SwapWindow(game->window);

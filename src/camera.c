@@ -35,14 +35,16 @@ static void rotate_camera(Camera* cam, Uint8 const* keystate)
 	const float true_yaw = space ? 180.0f : 0.0f;
 
 	// camera view
-	glRotatef(-cam->pitch, 1.0f, 0.0f, 0.0f);
+	//glRotatef(-cam->pitch, 1.0f, 0.0f, 0.0f);
 	glRotatef(-cam->yaw + true_yaw, 0.0f, 1.0f, 0.0f);
-	glTranslatef(-cam->x, -cam->y, -cam->z);
 }
 
 void update_camera(Camera* cam)
 {
 	Uint8 const* keystate = SDL_GetKeyboardState(NULL);
+
 	rotate_camera(cam, keystate);
 	move_camera(cam, keystate);
+
+	glTranslatef(-cam->x, -cam->y, -cam->z);
 }
