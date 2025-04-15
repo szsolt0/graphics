@@ -6,11 +6,8 @@
 
 #include <stdio.h>
 
-static
-int init_sdl(Game* game);
-
-static
-void init_opengl(Game* game);
+static int init_sdl(Game* game);
+static int init_opengl(Game* game);
 
 void init_game(Game* game, Uint32 width, Uint32 height)
 {
@@ -18,12 +15,16 @@ void init_game(Game* game, Uint32 width, Uint32 height)
 	game->width = width;
 	game->height = height;
 
-	if (init_sdl(game) != 0) {
+	if (0 != init_sdl(game)) {
 		return;
 	}
-	init_opengl(game);
+
+	if (0 != init_opengl(game)) {
+		return;
+	};
+
 	game->last_update_time = (double)SDL_GetTicks() / 1000;
-	game->camera.run_limit = MAX_RUN_LIMIT;
+	game->camera.sprint_limit = MAX_SPRINT_LIMIT;
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
@@ -94,10 +95,10 @@ void handle_game_events(Game* game)
 void update_game(Game* game)
 {
 	// debug only
-	printf("Game running: %d | Camera: x=%.2f y=%.2f z=%.2f yaw=%.2f pitch=%.2f run_limit: %u\n",
+	printf("Game running: %d | Camera: x=%.2f y=%.2f z=%.2f yaw=%.2f pitch=%.2f run_limit: %f\n",
 		game->is_running, game->camera.x, game->camera.y, game->camera.z,
 		game->camera.yaw, game->camera.pitch,
-		game->camera.run_limit
+		game->camera.sprint_limit
 	);
 
 	const double current_time = (double) SDL_GetTicks64() / 1000;
@@ -105,72 +106,12 @@ void update_game(Game* game)
 
 	game->last_update_time = current_time;
 
-	move_camera(&game->camera);
-}
-
-static void draw_cube(float x, float y, float z, float size) {
-	float half = size / 2.0f;
-
-	glBegin(GL_QUADS);
-
-	// Front face (red)
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glVertex3f(x - half, y - half, z + half);
-	glVertex3f(x + half, y - half, z + half);
-	glVertex3f(x + half, y + half, z + half);
-	glVertex3f(x - half, y + half, z + half);
-
-	// Back face (green)
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(x - half, y - half, z - half);
-	glVertex3f(x + half, y - half, z - half);
-	glVertex3f(x + half, y + half, z - half);
-	glVertex3f(x - half, y + half, z - half);
-
-	// Left face (blue)
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glVertex3f(x - half, y - half, z - half);
-	glVertex3f(x - half, y - half, z + half);
-	glVertex3f(x - half, y + half, z + half);
-	glVertex3f(x - half, y + half, z - half);
-
-	// Right face (yellow)
-	glColor3f(1.0f, 1.0f, 0.0f);
-	glVertex3f(x + half, y - half, z - half);
-	glVertex3f(x + half, y - half, z + half);
-	glVertex3f(x + half, y + half, z + half);
-	glVertex3f(x + half, y + half, z - half);
-
-	// Top face (cyan)
-	glColor3f(0.0f, 1.0f, 1.0f);
-	glVertex3f(x - half, y + half, z - half);
-	glVertex3f(x + half, y + half, z - half);
-	glVertex3f(x + half, y + half, z + half);
-	glVertex3f(x - half, y + half, z + half);
-
-	// Bottom face (magenta)
-	glColor3f(1.0f, 0.0f, 1.0f);
-	glVertex3f(x - half, y - half, z - half);
-	glVertex3f(x + half, y - half, z - half);
-	glVertex3f(x + half, y - half, z + half);
-	glVertex3f(x - half, y - half, z + half);
-
-	glEnd();
-}
-
-static void draw_cubes() {
-	for (int x = -2; x <= 2; x++) {
-		for (int y = -2; y <= 2; y++) {
-			draw_cube(x * 2.5f, y * 2.5f, -10.0f, 2.0f);
-		}
-	}
+	update_camera(&game->camera);
 }
 
 
 void render_game(Game* game)
 {
-	//printf("Rendering frame...\n");
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -185,7 +126,6 @@ void render_game(Game* game)
 	glRotatef(-game->camera.yaw + extra_yaw, 0.0f, 1.0f, 0.0f);
 	glTranslatef(-game->camera.x, -game->camera.y, -game->camera.z);
 
-	//draw_cubes();
 	render_walls(game->walls, game->walls_len, game->wall_texture);
 
 	SDL_GL_SwapWindow(game->window);
@@ -225,7 +165,7 @@ static int init_sdl(Game* game) {
 	return 0;
 }
 
-static void setup_lighting() {
+static void init_lighting() {
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
@@ -242,7 +182,7 @@ static void setup_lighting() {
 }
 
 
-static void init_opengl(Game* game)
+static int init_opengl(Game* game)
 {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
@@ -269,4 +209,6 @@ static void init_opengl(Game* game)
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	return 0;
 }

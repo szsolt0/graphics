@@ -8,6 +8,8 @@
 
 #define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 
+#define panic(msg, ...) fprintf(stderr, "panic: " msg "\n" __VA_OPT__(,) __VA_ARGS__); exit(1)
+
 typedef struct vec3
 {
 	float x;

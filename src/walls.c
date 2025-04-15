@@ -13,16 +13,14 @@ static GLuint load_texture(const char* file)
 {
 	SDL_Surface* surface = IMG_Load(file);
 	if (!surface) {
-		fprintf(stderr, "Failed to load texture: %s\n", IMG_GetError());
-		return 0;
+		panic("Failed to load texture: %s", IMG_GetError());
 	}
 
 	SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
 	SDL_FreeSurface(surface);
 
 	if (!formatted) {
-		fprintf(stderr, "Failed to convert surface format: %s\n", SDL_GetError());
-		return 0;
+		panic("Failed to convert surface format: %s", SDL_GetError());
 	}
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -74,7 +72,7 @@ ssize_t load_walls(Wall** walls, GLuint* texture, const char* file)
 static void print_walls(const Wall* w, size_t walls_len)
 {
 	for (size_t i = 0; i < walls_len; ++i) {
-		printf("wall: [%d %d %d %d]\n", w->x0, w->x1, w->z0, w->z1);
+		printf("wall: [%f %f %f %f]\n", w->x0, w->x1, w->z0, w->z1);
 	}
 }
 
@@ -101,7 +99,6 @@ void render_walls(const Wall* walls, size_t walls_len, GLuint texture) {
 
 		glBegin(GL_QUADS);
 
-		//glColor3f(1.0f, 0.0f, 1.0f);
 		glTexCoord2f(0.0f, 0.0f); glVertex3f(wall->x0, 0.0f, wall->z0);
 		glTexCoord2f(wall_width, 0.0f); glVertex3f(wall->x1, 0.0f, wall->z1);
 		glTexCoord2f(wall_width, 1.0f); glVertex3f(wall->x1, 1.0f, wall->z1);

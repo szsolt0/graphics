@@ -34,11 +34,3 @@ void handle_game_events(Game* game);
 void update_game(Game* game);
 
 void render_game(Game* game);
-
-static inline
-Game create_game(Uint32 width, Uint32 height)
-{
-	Game game;
-	init_game(&game, width, height);
-	return game;
-}

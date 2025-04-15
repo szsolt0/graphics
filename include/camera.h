@@ -1,12 +1,12 @@
 #pragma once
 #include <SDL2/SDL.h>
 
-static const Uint32 MAX_RUN_LIMIT = 200000;
+static const float MAX_SPRINT_LIMIT = 300;
 
 typedef struct Camera {
 	float x, y, z;
 	float yaw, pitch; // in degrees
-	Uint32 run_limit;
+	float sprint_limit;
 } Camera;
 
-void move_camera(Camera* game);
+void update_camera(Camera* cam);

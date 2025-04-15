@@ -8,7 +8,7 @@
 typedef struct Wall
 {
 	// coordinates for the bottom of the wall
-	int32_t x0, z0, x1, z1;
+	float x0, z0, x1, z1;
 } Wall;
 
 /// @brief load wall definitions from a file
