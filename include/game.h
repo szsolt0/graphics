@@ -1,13 +1,16 @@
 #pragma once
+#include <utils.h>
 #include <walls.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <GL/glew.h>
-#include <GL/gl.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <camera.h>
-#include <utils.h>
+#include <textures.h>
+
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+
+#include <stdbool.h>
 
 typedef struct Game
 {
@@ -20,7 +23,7 @@ typedef struct Game
 	double last_update_time;
 	Uint32 width;
 	Uint32 height;
-	GLuint wall_texture;
+	Textures textures;
 	Camera camera;
 	bool is_running;
 } Game;

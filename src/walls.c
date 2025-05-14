@@ -9,63 +9,64 @@
 #include <string.h>
 #include <errno.h>
 
-static GLuint load_texture(const char* file)
+/*Wall the_walls[] = {
+	// outer frame
+	{0.0f, 0.0f, 5.0f, 0.0f}, // bottom
+	{5.0f, 0.0f, 5.0f, 4.0f}, // right
+	{5.0f, 5.0f, 0.0f, 5.0f}, // top
+	{0.0f, 5.0f, 0.0f, 0.0f}, // left
+
+	// inner
+	{1.0f, 0.0f, 1.0f, 4.0f},
+	{1.0f, 4.0f, 2.0f, 4.0f},
+	{2.0f, 4.0f, 2.0f, 1.0f},
+	{2.0f, 1.0f, 3.0f, 1.0f},
+	{3.0f, 1.0f, 3.0f, 3.0f},
+	{3.0f, 3.0f, 4.0f, 3.0f},
+	{4.0f, 3.0f, 4.0f, 0.0f},
+};*/
+
+Wall the_walls[] = {
+	// outer frame
+	{1.0f, 0.0f, 10.0f, 0.0f},
+	{10.0f, 0.0f, 10.0f, 10.0f},
+	{10.0f, 10.0f, 0.0f, 10.0f},
+	{0.0f, 10.0f, 0.0f, 0.0f},
+
+	// inner maze
+	{1.0f, 0.0f, 1.0f, 8.0f},
+	{1.0f, 8.0f, 3.0f, 8.0f},
+	{3.0f, 8.0f, 3.0f, 5.0f},
+	{3.0f, 5.0f, 5.0f, 5.0f},
+	{5.0f, 5.0f, 5.0f, 2.0f},
+	{5.0f, 2.0f, 2.0f, 2.0f},
+	{2.0f, 2.0f, 2.0f, 1.0f},
+
+	{6.0f, 0.0f, 6.0f, 7.0f},
+	{6.0f, 7.0f, 8.0f, 7.0f},
+	{8.0f, 7.0f, 8.0f, 3.0f},
+	{8.0f, 3.0f, 9.5f, 3.0f},
+
+	// cross connectors
+	{3.0f, 6.0f, 6.0f, 6.0f},
+	{4.0f, 3.0f, 7.0f, 3.0f},
+
+	// dead-ends
+	{9.0f, 3.0f, 9.0f, 1.0f},
+	{9.0f, 1.0f, 7.0f, 1.0f},
+	{7.0f, 1.0f, 7.0f, 0.0f},
+
+	// center box
+	{4.0f, 7.0f, 4.0f, 9.0f},
+	{4.0f, 9.0f, 6.0f, 9.0f},
+	{6.0f, 9.0f, 6.0f, 7.0f},
+	{6.0f, 7.0f, 4.0f, 7.0f},
+};
+
+
+ssize_t load_walls(Wall** walls, GLuint texture)
 {
-	SDL_Surface* surface = IMG_Load(file);
-	if (!surface) {
-		panic("Failed to load texture: %s", IMG_GetError());
-	}
-
-	SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
-	SDL_FreeSurface(surface);
-
-	if (!formatted) {
-		panic("Failed to convert surface format: %s", SDL_GetError());
-	}
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-
-	GLuint texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	glTexImage2D(
-		GL_TEXTURE_2D, 0, GL_RGBA, formatted->w, formatted->h, 0,
-		GL_RGBA, GL_UNSIGNED_BYTE, formatted->pixels
-	);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	SDL_FreeSurface(formatted);
-	return texture;
-}
-
-ssize_t load_walls(Wall** walls, GLuint* texture, const char* file)
-{
-	*texture = load_texture("assets/wall2.png");
-
-	const Wall the_walls[] = {
-		(Wall) {0, 0, 10, 0},
-		(Wall) {10, 0, 10, 50},
-		(Wall) {10, 50, 800, 50},
-	};
-
-	Wall* wall_ptr = malloc(sizeof(Wall) * ARRAY_LEN(the_walls));
-
-	if (!wall_ptr) {
-		*walls = NULL;
-		return -ENOMEM;
-	}
-
-	memcpy(wall_ptr, the_walls, sizeof the_walls);
-	*walls = wall_ptr;
-
+	*walls = the_walls;
 	return ARRAY_LEN(the_walls);
 }
 
@@ -76,34 +77,60 @@ static void print_walls(const Wall* w, size_t walls_len)
 	}
 }
 
-/// @brief render the walls in the game
-/// @param walls the walls to render
-/// @param walls_len the number of walls stored in `walls`
 void render_walls(const Wall* walls, size_t walls_len, GLuint texture) {
+	glDisable(GL_CULL_FACE);
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glColor3f(1.0f, 1.0f, 1.0f);
 
 	for (size_t i = 0; i < walls_len; ++i) {
 		const Wall* wall = &walls[i];
 
-		const float x_wall_width = fabs(wall->x1 - wall->x0);
-		const float z_wall_width = fabs(wall->z1 - wall->z0);
-		const float wall_width = fabs(sqrt(x_wall_width*x_wall_width + z_wall_width*z_wall_width));
+		const float dx = wall->x1 - wall->x0;
+		const float dz = wall->z1 - wall->z0;
+		const float length = sqrtf(dx*dx + dz*dz);
 
 		glBegin(GL_QUADS);
-
-		glTexCoord2f(0.0f, 0.0f); glVertex3f(wall->x0, 0.0f, wall->z0);
-		glTexCoord2f(wall_width, 0.0f); glVertex3f(wall->x1, 0.0f, wall->z1);
-		glTexCoord2f(wall_width, 1.0f); glVertex3f(wall->x1, 1.0f, wall->z1);
-		glTexCoord2f(0.0f, 1.0f); glVertex3f(wall->x0, 1.0f, wall->z0);
-
+			glTexCoord2f(0.0f, 0.0f);   glVertex3f(wall->x0, 0.0f, wall->z0);
+			glTexCoord2f(length, 0.0f); glVertex3f(wall->x1, 0.0f, wall->z1);
+			glTexCoord2f(length, 5.0f); glVertex3f(wall->x1, 5.0f, wall->z1);
+			glTexCoord2f(0.0f, 5.0f);   glVertex3f(wall->x0, 5.0f, wall->z0);
 		glEnd();
 	}
+}
+
+void render_floor(GLuint floor_texture) {
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, floor_texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(  0.0f,   0.0f);  glVertex3f(-100.0f,  0.0f, -100.0f);
+		glTexCoord2f(100.0f,   0.0f);  glVertex3f( 100.0f,  0.0f, -100.0f);
+		glTexCoord2f(100.0f, 100.0f);  glVertex3f( 100.0f,  0.0f,  100.0f);
+		glTexCoord2f(  0.0f, 100.0f);  glVertex3f(-100.0f,  0.0f,  100.0f);
+	glEnd();
+}
+
+void render_roof(GLuint ceil_texture) {
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, ceil_texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(  0.0f,   0.0f);  glVertex3f(-100.0f,  5.0f, -100.0f);
+		glTexCoord2f(100.0f,   0.0f);  glVertex3f( 100.0f,  5.0f, -100.0f);
+		glTexCoord2f(100.0f, 100.0f);  glVertex3f( 100.0f,  5.0f,  100.0f);
+		glTexCoord2f(  0.0f, 100.0f);  glVertex3f(-100.0f,  5.0f,  100.0f);
+	glEnd();
 }

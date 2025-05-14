@@ -1,6 +1,7 @@
-#include "game.h"
-#include "utils.h"
+#include <game.h>
+#include <utils.h>
 #include <walls.h>
+#include <light.h>
 
 #include <GL/gl.h>
 
@@ -23,16 +24,15 @@ void init_game(Game* game, Uint32 width, Uint32 height)
 		return;
 	};
 
+	game->camera.x = -20;
+	game->camera.y = 1;
+	game->camera.z = -20;
+	game->camera.yaw = 180;
+
 	game->last_update_time = (double)SDL_GetTicks() / 1000;
 	game->camera.sprint_limit = MAX_SPRINT_LIMIT;
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
-
-	game->sprint_bar = IMG_LoadTexture(game->renderer, "assets/run_limit.png");
-	if (!game->sprint_bar) {
-		fprintf(stderr, "[ERROR] sprint_bar texture load failed: %s\n", SDL_GetError());
-		return;
-	}
 
 	if (!game->window) {
 		fprintf(stderr, "[ERROR] SDL_Window creation failed: %s\n", SDL_GetError());
@@ -43,12 +43,12 @@ void init_game(Game* game, Uint32 width, Uint32 height)
 		return;
 	}
 
-	const ssize_t walls_len = load_walls(&game->walls, &game->wall_texture, "asd.txt");
-	if (walls_len < 0) {
-		fprintf(stderr, "[ERROR] loading walls from '%s' failed\n", "asd.txt");
+	if (init_textures(&game->textures) != 0) {
+		fprintf(stderr, "[ERROR] texture loading failed\n");
 		return;
 	}
-	game->walls_len = walls_len;
+
+	game->walls_len = load_walls(&game->walls, 0);
 
 	game->is_running = true;
 }
@@ -72,6 +72,8 @@ static void handle_mouse_motion(Game* game, SDL_Event const* event)
 	game->camera.yaw   -= event->motion.xrel * sensitivity;
 	game->camera.yaw    = fmodf(game->camera.yaw, 360.0f); // restrict to circle
 	game->camera.pitch -= event->motion.yrel * sensitivity;
+
+	game->camera.yaw = game->camera.yaw < 0 ? 360 + game->camera.yaw : game->camera.yaw;
 
 	// restrict pitch to [-89°, 89°]
 	if (game->camera.pitch > +89.0f) game->camera.pitch = +89.0f;
@@ -102,9 +104,13 @@ void update_game(Game* game)
 	);
 
 	const double current_time = (double) SDL_GetTicks64() / 1000;
-	const double elapsed_time = current_time - game->last_update_time;;
+	const double elapsed_time = current_time - game->last_update_time;
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
 	game->last_update_time = current_time;
+	update_camera(&game->camera, game->walls, game->walls_len);
 }
 
 
@@ -112,11 +118,22 @@ void render_game(Game* game)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 
-	update_camera(&game->camera);
-	render_walls(game->walls, game->walls_len, game->wall_texture);
+	update_lights(&game->camera);
+	render_floor(game->textures.ids[TexFloor]);
+	render_roof(game->textures.ids[TexRoof]);
+	render_walls(game->walls, game->walls_len, game->textures.ids[TexWallNormal]);
+
+	// debug square
+	/*glDisable(GL_TEXTURE_2D);
+	glColor3f(0.0f, 1.0f, 0.0f);
+
+	glBegin(GL_QUADS);
+	glVertex3f(-1, 0, -2);
+	glVertex3f(1, 0, -2);
+	glVertex3f(1, 2, -2);
+	glVertex3f(-1, 2, -2);
+	glEnd();*/
 
 	SDL_GL_SwapWindow(game->window);
 }
@@ -155,50 +172,24 @@ static int init_sdl(Game* game) {
 	return 0;
 }
 
-static void init_lighting() {
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-
-	GLfloat lightPos[] = { 0.0f, 0.0f, 5.0f, 1.0f };
-	GLfloat lightColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	GLfloat ambientLight[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightColor);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
-
-	glEnable(GL_COLOR_MATERIAL);
-	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-}
-
 
 static int init_opengl(Game* game)
 {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
 
-	//setup_lighting();
-
+	init_lightning();
 
 	glClearColor(0.1, 0.1, 0.1, 1.0);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-
-	// manual perspective projection (??)
-	float fov = 60.0f;
-	float aspect_ratio = (float)game->width / (float)game->height;
-	float near_plane = 0.1f;
-	float far_plane = 1000.0f;
-	float top = near_plane * tanf((fov * M_PI / 180.0f) / 2);
-	float bottom = -top;
-	float right = top * aspect_ratio;
-	float left = -right;
-
-	glFrustum(left, right, bottom, top, near_plane, far_plane);
+	gluPerspective(90.0f, (float)game->width / game->height, 0.1f, 1000.0f);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+	//gluLookAt(0, 1, 1, 0, 0, 0, 0, 1, 0);
+	//gluLookAt(2.5, 2.5, 8.0, 2.5, 2.5, 0.0, 0.0, 1.0, 0.0);
 
 	return 0;
 }
