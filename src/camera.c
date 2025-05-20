@@ -38,28 +38,23 @@
 
 static bool collides_x(float prev_x, const float next_x, const float prev_z, const float next_z, const Wall* wall) {
 	const float WALL_THICKNESS = 0.2f;
-	const float MOVEMENT_THRESHOLD = 0.001f;
+	const float CAMERA_RADIUS = 0.1f;
 
-	if ((wall->x0 - wall->x1) > 0.001f) {
+	// only x colliders
+	if (fabsf(wall->x0 - wall->x1) > 0.001f) {
 		return false;
 	}
 
 	const float wall_x = wall->x0;
-	const float min_z = fmin(wall->z0, wall->z1);
-	const float max_z = fmax(wall->z0, wall->z1);
+	const float min_z = fminf(wall->z0, wall->z1) - CAMERA_RADIUS;
+	const float max_z = fmaxf(wall->z0, wall->z1) + CAMERA_RADIUS;
 
-	if (min_z <= prev_z && prev_z <= max_z) {
-		float min_x = wall_x - WALL_THICKNESS / 2.0f;
-		float max_x = wall_x + WALL_THICKNESS / 2.0f;
+	if (prev_z >= min_z && prev_z <= max_z || next_z >= min_z && next_z <= max_z) {
+		const float min_x = wall_x - WALL_THICKNESS / 2.0f - CAMERA_RADIUS;
+		const float max_x = wall_x + WALL_THICKNESS / 2.0f + CAMERA_RADIUS;
 
-		if ((prev_x < min_x && next_x >= min_x) || (prev_x > max_x && next_x <= max_x)) {
+		if (next_x >= min_x && next_x <= max_x) {
 			return true;
-		}
-
-		if (min_x <= next_x && next_x <= max_x) {
-			if (fabs(prev_x - next_x) > MOVEMENT_THRESHOLD) {
-				return true;
-			}
 		}
 	}
 
@@ -69,28 +64,23 @@ static bool collides_x(float prev_x, const float next_x, const float prev_z, con
 
 static bool collides_z(float prev_x, const float next_x, const float prev_z, const float next_z, const Wall* wall) {
 	const float WALL_THICKNESS = 0.2f;
-	const float MOVEMENT_THRESHOLD = 0.001f;
+	const float CAMERA_RADIUS = 0.1f;
 
-	if ((wall->z0 - wall->z1) > 0.001f) {
+	// only z colliders
+	if (fabsf(wall->z0 - wall->z1) > 0.001f) {
 		return false;
 	}
 
 	const float wall_z = wall->z0;
-	const float min_x = fmin(wall->x0, wall->x1);
-	const float max_x = fmax(wall->x0, wall->x1);
+	const float min_x = fminf(wall->x0, wall->x1) - CAMERA_RADIUS;
+	const float max_x = fmaxf(wall->x0, wall->x1) + CAMERA_RADIUS;
 
-	if (min_x <= prev_x && prev_x <= max_x) {
-		float min_z = wall_z - WALL_THICKNESS / 2.0f;
-		float max_z = wall_z + WALL_THICKNESS / 2.0f;
+	if (prev_x >= min_x && prev_x <= max_x || next_x >= min_x && next_x <= max_x) {
+		const float min_z = wall_z - WALL_THICKNESS / 2.0f - CAMERA_RADIUS;
+		const float max_z = wall_z + WALL_THICKNESS / 2.0f + CAMERA_RADIUS;
 
-		if ((prev_z < min_z && next_z >= min_z) || (prev_z > max_z && next_z <= max_z)) {
+		if (next_z >= min_z && next_z <= max_z) {
 			return true;
-		}
-
-		if (min_z <= next_z && next_z <= max_z) {
-			if (fabs(prev_z - next_z) > MOVEMENT_THRESHOLD) {
-				return true;
-			}
 		}
 	}
 
@@ -98,7 +88,9 @@ static bool collides_z(float prev_x, const float next_x, const float prev_z, con
 }
 
 
-static void move_camera(Camera* cam, Uint8 const* keystate, const Wall* walls, size_t wallcnt) {
+
+static void move_camera(Camera* cam, Uint8 const* keystate, const Wall* walls, size_t wallcnt)
+{
 	float speed = 0.1f;
 	bool is_moving = false;
 
@@ -107,37 +99,42 @@ static void move_camera(Camera* cam, Uint8 const* keystate, const Wall* walls, s
 		cam->sprint_limit -= 1;
 	}
 
-	float dx = cosf(degree_to_radian(cam->yaw)) * speed;
-	float dz = sinf(degree_to_radian(cam->yaw)) * speed;
+	int steps = (speed > 0.2f) ? (int)(speed / 0.2f) : 1;
+	float step_size = speed / steps;
 
-	float old_x = cam->x;
-	float old_z = cam->z;
+	for (int i = 0; i < steps; ++i) {
+		float dx = cosf(degree_to_radian(cam->yaw)) * step_size;
+		float dz = sinf(degree_to_radian(cam->yaw)) * step_size;
 
-	if (keystate[SDL_SCANCODE_D]) { cam->x += dx; cam->z -= dz; is_moving = true; }
-	if (keystate[SDL_SCANCODE_S]) { cam->x += dz; cam->z += dx; is_moving = true; }
-	if (keystate[SDL_SCANCODE_A]) { cam->x -= dx; cam->z += dz; is_moving = true; }
-	if (keystate[SDL_SCANCODE_W]) { cam->x -= dz; cam->z -= dx; is_moving = true; }
+		float move_x = 0.0f;
+		float move_z = 0.0f;
 
-	bool coll_x = false, coll_z = false;
-	for (size_t i = 0; i < wallcnt; ++i) {
-		const Wall* w = &walls[i];
-		if (collides_x(old_x, cam->x, old_z, cam->z, w)) {
-			coll_x = true;
+		if (keystate[SDL_SCANCODE_D]) { move_x += dx; move_z -= dz; is_moving = true; }
+		if (keystate[SDL_SCANCODE_S]) { move_x += dz; move_z += dx; is_moving = true; }
+		if (keystate[SDL_SCANCODE_A]) { move_x -= dx; move_z += dz; is_moving = true; }
+		if (keystate[SDL_SCANCODE_W]) { move_x -= dz; move_z -= dx; is_moving = true; }
+
+		float new_x = cam->x + move_x;
+		float new_z = cam->z + move_z;
+
+		bool blocked_x = false, blocked_z = false;
+
+		for (size_t j = 0; j < wallcnt; ++j) {
+			const Wall* w = &walls[j];
+			if (collides_x(cam->x, new_x, cam->z, cam->z, w)) blocked_x = true;
+			if (collides_z(cam->x, cam->x, cam->z, new_z, w)) blocked_z = true;
 		}
-		if (collides_z(old_x, cam->x, old_z, cam->z, w)) {
-			coll_z = true;
-		}
+
+		if (!blocked_x) cam->x = new_x;
+		if (!blocked_z) cam->z = new_z;
 	}
-
-	if (coll_x) cam->x = old_x;
-	if (coll_z) cam->z = old_z;
-
 
 	// recover sprint on idle
 	if (!is_moving) {
 		cam->sprint_limit = min_u32(cam->sprint_limit + 1, MAX_SPRINT_LIMIT);
 	}
 }
+
 
 static void rotate_camera(Camera* cam, Uint8 const* keystate)
 {
@@ -152,10 +149,19 @@ static void rotate_camera(Camera* cam, Uint8 const* keystate)
 void update_camera(Camera* restrict cam, const Wall* restrict walls, size_t wallcnt)
 {
 	Uint8 const* keystate = SDL_GetKeyboardState(NULL);
-	//const BoolPair colls = collides_with_x_or_z(walls, wallcnt, cam->x, cam->y);
-
-	rotate_camera(cam, keystate);
 	move_camera(cam, keystate, walls, wallcnt);
+}
+
+void apply_camera_transform(Camera const* cam)
+{
+	glRotatef(-cam->pitch, 1.0f, 0.0f, 0.0f);
+
+	float true_yaw = 0.0f;
+	const Uint8* keystate = SDL_GetKeyboardState(NULL);
+	if (keystate[SDL_SCANCODE_SPACE]) {
+		true_yaw = 180.0f;
+	}
+	glRotatef(-cam->yaw + true_yaw, 0.0f, 1.0f, 0.0f);
 
 	glTranslatef(-cam->x, -cam->y, -cam->z);
 }

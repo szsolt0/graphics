@@ -12,3 +12,4 @@ typedef struct Camera {
 } Camera;
 
 void update_camera(Camera* restrict cam, const Wall* restrict walls, size_t wallcnt);
+void apply_camera_transform(Camera const* cam);

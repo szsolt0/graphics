@@ -27,7 +27,7 @@ void init_game(Game* game, Uint32 width, Uint32 height)
 	game->camera.x = -20;
 	game->camera.y = 1;
 	game->camera.z = -20;
-	game->camera.yaw = 180;
+	game->camera.yaw = 0;
 
 	game->last_update_time = (double)SDL_GetTicks() / 1000;
 	game->camera.sprint_limit = MAX_SPRINT_LIMIT;
@@ -106,34 +106,30 @@ void update_game(Game* game)
 	const double current_time = (double) SDL_GetTicks64() / 1000;
 	const double elapsed_time = current_time - game->last_update_time;
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	update_camera(&game->camera, game->walls, game->walls_len);
 
 	game->last_update_time = current_time;
-	update_camera(&game->camera, game->walls, game->walls_len);
 }
 
 
 void render_game(Game* game)
 {
+	Camera* cam = &game->camera;
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	apply_camera_transform(cam);
 
 
 	update_lights(&game->camera);
+
+
 	render_floor(game->textures.ids[TexFloor]);
 	render_roof(game->textures.ids[TexRoof]);
 	render_walls(game->walls, game->walls_len, game->textures.ids[TexWallNormal]);
-
-	// debug square
-	/*glDisable(GL_TEXTURE_2D);
-	glColor3f(0.0f, 1.0f, 0.0f);
-
-	glBegin(GL_QUADS);
-	glVertex3f(-1, 0, -2);
-	glVertex3f(1, 0, -2);
-	glVertex3f(1, 2, -2);
-	glVertex3f(-1, 2, -2);
-	glEnd();*/
 
 	SDL_GL_SwapWindow(game->window);
 }
