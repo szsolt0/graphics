@@ -22,6 +22,12 @@ https://drive.google.com/drive/folders/1PYi7EQtkOhjznKYWmnMSt3MmTQeTzTY0?usp=sha
 make
 ```
 
+On Windows:
+
+```sh
+make windows
+```
+
 ## Controls
 
 - mouse: look arround
