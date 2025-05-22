@@ -1,8 +1,11 @@
 #include <textures.h>
 #include <utils.h>
-#include <errno.h>
 
 #include <SDL2/SDL_image.h>
+
+#include <errno.h>
+#include <stdio.h>
+
 
 #define BASE_DIR "assets/textures/"
 

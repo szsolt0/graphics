@@ -2,11 +2,12 @@
 #include <utils.h>
 
 #include <SDL2/SDL.h>
-#include <GL/glew.h>
+//#include <GL/glew.h>
 #include <GL/gl.h>
 
 #include <stdbool.h>
 #include <math.h>
+#include <stdio.h>
 
 // old variant, not the best :(
 /*static bool collides_x(float prev_x, const float next_x, const float prev_z, const float next_z, const Wall* wall) {
@@ -49,7 +50,7 @@ static bool collides_x(float prev_x, const float next_x, const float prev_z, con
 	const float min_z = fminf(wall->z0, wall->z1) - CAMERA_RADIUS;
 	const float max_z = fmaxf(wall->z0, wall->z1) + CAMERA_RADIUS;
 
-	if (prev_z >= min_z && prev_z <= max_z || next_z >= min_z && next_z <= max_z) {
+	if ((prev_z >= min_z && prev_z <= max_z) || (next_z >= min_z && next_z <= max_z)) {
 		const float min_x = wall_x - WALL_THICKNESS / 2.0f - CAMERA_RADIUS;
 		const float max_x = wall_x + WALL_THICKNESS / 2.0f + CAMERA_RADIUS;
 
@@ -75,7 +76,7 @@ static bool collides_z(float prev_x, const float next_x, const float prev_z, con
 	const float min_x = fminf(wall->x0, wall->x1) - CAMERA_RADIUS;
 	const float max_x = fmaxf(wall->x0, wall->x1) + CAMERA_RADIUS;
 
-	if (prev_x >= min_x && prev_x <= max_x || next_x >= min_x && next_x <= max_x) {
+	if ((prev_x >= min_x && prev_x <= max_x) || (next_x >= min_x && next_x <= max_x)) {
 		const float min_z = wall_z - WALL_THICKNESS / 2.0f - CAMERA_RADIUS;
 		const float max_z = wall_z + WALL_THICKNESS / 2.0f + CAMERA_RADIUS;
 

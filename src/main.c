@@ -1,13 +1,16 @@
 #include <game.h>
 
 #include <stdlib.h>
+#include <stdio.h>
 
-int main(void)
+
+int main(int argc, char** argv)
 {
 	Game* game = calloc(1, sizeof *game);
 
 	if (!game) {
-		panic("initial malloc failed");
+		printf("%s\n", "initial malloc failed");
+		return 1;
 	}
 
 	init_game(game, 1200, 900);

@@ -2,6 +2,8 @@
 
 #include <light.h>
 #include <math.h>
+#include <stdio.h>
+
 
 int init_lightning(void)
 {

@@ -180,12 +180,17 @@ static int init_opengl(Game* game)
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(90.0f, (float)game->width / game->height, 0.1f, 1000.0f);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	//gluLookAt(0, 1, 1, 0, 0, 0, 0, 1, 0);
-	//gluLookAt(2.5, 2.5, 8.0, 2.5, 2.5, 0.0, 0.0, 1.0, 0.0);
+	const float fov = 60.0f;
+	const float aspect_ratio = (float)game->width / (float)game->height;
+	const float near_plane = 0.1f;
+	const float far_plane = 1000.0f;
+	const float top = near_plane * tanf((fov * M_PI / 180.0f) / 2);
+	const float bottom = -top;
+	const float right = top * aspect_ratio;
+	const float left = -right;
+
+	glFrustum(left, right, bottom, top, near_plane, far_plane);
 
 	return 0;
 }
