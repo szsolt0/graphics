@@ -3,6 +3,7 @@
 #include <walls.h>
 #include <light.h>
 #include <help_menu.h>
+#include <cube.h>
 
 #include <GL/gl.h>
 
@@ -142,11 +143,24 @@ void render_game(Game* game)
 	apply_camera_transform(cam);
 
 
-
-
 	render_floor(game->textures.ids[TexFloor]);
 	render_roof(game->textures.ids[TexRoof]);
 	render_walls(game->walls, game->walls_len, game->textures.ids[TexWallNormal]);
+
+	double anim_time = game->last_update_time;
+
+	float rotation_speed = 45.0f;
+	float rotation_angle = fmodf(rotation_speed * anim_time, 360.0f);
+
+	float amplitude = 1.0f;
+	float frequency = 0.25f;
+	float vertical_offset = amplitude * sinf(2.0f * M_PI * frequency * anim_time);
+
+	glPushMatrix();
+		glTranslatef(-20.0f, 1.5f + vertical_offset, -20.0f);
+		glRotatef(rotation_angle, 0.0f, 1.0f, 0.0f);
+		draw_cube(game->textures.ids[TexFloor]);
+	glPopMatrix();
 
 	if (game->show_help_menu) {
 		render_help_menu(game->textures.ids[TexHelpMenu], game->width, game->height);

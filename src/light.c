@@ -34,7 +34,7 @@ int init_lightning(void)
 
 void update_lights(Camera* cam, uint8_t light_lvl) {
 
-	GLfloat light_pos[] = { -0.2, -0.3, 0, 1.0f };
+	GLfloat light_pos[] = { +0.2, -0.3, 0, 1.0f };
 	GLfloat spot_dir[]  = { 0, 0, -1 };
 
 	glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
@@ -55,7 +55,7 @@ void update_lights(Camera* cam, uint8_t light_lvl) {
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
 
 	// no light if far away
-	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.5f);
+	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.16f);
 }
 
 
