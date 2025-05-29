@@ -25,4 +25,5 @@ typedef struct Spotlight
 } Spotlight;
 
 int init_lightning(void);
-void update_lights(Camera* cam);
+void update_lights(Camera* cam, uint8_t light_lvl);
+void update_light_level(int8_t* lvl, double current_time, double* last_light_update_time);

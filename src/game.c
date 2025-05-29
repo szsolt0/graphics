@@ -97,16 +97,17 @@ void handle_game_events(Game* game)
 void update_game(Game* game)
 {
 	// debug only
-	printf("Game running: %d | Camera: x=%.2f y=%.2f z=%.2f yaw=%.2f pitch=%.2f run_limit: %f\n",
+	printf("Game running: %d | Camera: x=%.2f y=%.2f z=%.2f yaw=%.2f pitch=%.2f sprint_limit: %f light_lvl: %d\n",
 		game->is_running, game->camera.x, game->camera.y, game->camera.z,
 		game->camera.yaw, game->camera.pitch,
-		game->camera.sprint_limit
+		game->camera.sprint_limit, (int) game->light_level
 	);
 
 	const double current_time = (double) SDL_GetTicks64() / 1000;
-	const double elapsed_time = current_time - game->last_update_time;
+	const double elapsed_time = fabs(current_time - game->last_update_time);
 
 	update_camera(&game->camera, game->walls, game->walls_len);
+	update_light_level(&game->light_level, current_time, &game->last_light_update_time);
 
 	game->last_update_time = current_time;
 }
@@ -124,7 +125,7 @@ void render_game(Game* game)
 	apply_camera_transform(cam);
 
 
-	update_lights(&game->camera);
+	update_lights(&game->camera, game->light_level);
 
 
 	render_floor(game->textures.ids[TexFloor]);

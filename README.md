@@ -34,3 +34,4 @@ make windows
 - `w`, `a`, `s`, `d`: move
 - `<shift>`: run
 - `<space>`: look back
+- `+`, `-`: change light value
