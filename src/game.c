@@ -25,9 +25,9 @@ void init_game(Game* game, Uint32 width, Uint32 height)
 		return;
 	};
 
-	game->camera.x = -20;
+	game->camera.x = 9.5;
 	game->camera.y = 1;
-	game->camera.z = -20;
+	game->camera.z = 4.5;
 	game->camera.yaw = 0;
 
 	game->last_update_time = (double)SDL_GetTicks() / 1000;
@@ -78,10 +78,13 @@ static void handle_mouse_motion(Game* game, SDL_Event const* event)
 {
 	const float sensitivity = 0.1f;
 	game->camera.yaw   -= event->motion.xrel * sensitivity;
-	game->camera.yaw    = fmodf(game->camera.yaw, 360.0f); // restrict to circle
 	game->camera.pitch -= event->motion.yrel * sensitivity;
 
-	game->camera.yaw = game->camera.yaw < 0 ? 360 + game->camera.yaw : game->camera.yaw;
+	if (game->camera.yaw < 0.0f) {
+		game->camera.yaw += 360.0f;
+	} else if (game->camera.yaw >= 360.0f) {
+		game->camera.yaw -= 360.0f;
+	}
 
 	// restrict pitch to [-89°, 89°]
 	if (game->camera.pitch > +89.0f) game->camera.pitch = +89.0f;
@@ -101,7 +104,7 @@ void handle_game_events(Game* game)
 		}
 
 		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F1) {
-			game->show_help_menu = !game->show_help_menu;
+			game->show_help_menu ^= true;
 		}
 	}
 }
@@ -135,10 +138,10 @@ void render_game(Game* game)
 	glLoadIdentity();
 
 
+	update_lights(&game->camera, game->light_level);
 	apply_camera_transform(cam);
 
 
-	update_lights(&game->camera, game->light_level);
 
 
 	render_floor(game->textures.ids[TexFloor]);
@@ -192,6 +195,7 @@ static int init_opengl(Game* game)
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
+	//glEnable(GL_AUTO_NORMAL);
 
 	init_lightning();
 

@@ -104,30 +104,57 @@ static void move_camera(Camera* cam, Uint8 const* keystate, const Wall* walls, s
 	float step_size = speed / steps;
 
 	for (int i = 0; i < steps; ++i) {
-		float dx = cosf(degree_to_radian(cam->yaw)) * step_size;
-		float dz = sinf(degree_to_radian(cam->yaw)) * step_size;
+		float yaw_rad = degree_to_radian(cam->yaw);
+		float forward_x = sinf(yaw_rad);
+		float forward_z = cosf(yaw_rad);
+
+		float left_x = -forward_z;
+		float left_z = forward_x;
 
 		float move_x = 0.0f;
 		float move_z = 0.0f;
 
-		if (keystate[SDL_SCANCODE_D]) { move_x += dx; move_z -= dz; is_moving = true; }
-		if (keystate[SDL_SCANCODE_S]) { move_x += dz; move_z += dx; is_moving = true; }
-		if (keystate[SDL_SCANCODE_A]) { move_x -= dx; move_z += dz; is_moving = true; }
-		if (keystate[SDL_SCANCODE_W]) { move_x -= dz; move_z -= dx; is_moving = true; }
-
-		float new_x = cam->x + move_x;
-		float new_z = cam->z + move_z;
-
-		bool blocked_x = false, blocked_z = false;
-
-		for (size_t j = 0; j < wallcnt; ++j) {
-			const Wall* w = &walls[j];
-			if (collides_x(cam->x, new_x, cam->z, cam->z, w)) blocked_x = true;
-			if (collides_z(cam->x, cam->x, cam->z, new_z, w)) blocked_z = true;
+		if (keystate[SDL_SCANCODE_S]) {
+			move_x += forward_x;
+			move_z += forward_z;
+			is_moving = true;
+		}
+		if (keystate[SDL_SCANCODE_W]) {
+			move_x -= forward_x;
+			move_z -= forward_z;
+			is_moving = true;
+		}
+		if (keystate[SDL_SCANCODE_A]) {
+			move_x += left_x;
+			move_z += left_z;
+			is_moving = true;
+		}
+		if (keystate[SDL_SCANCODE_D]) {
+			move_x -= left_x;
+			move_z -= left_z;
+			is_moving = true;
 		}
 
-		if (!blocked_x) cam->x = new_x;
-		if (!blocked_z) cam->z = new_z;
+		// Normalize move vector if not zero
+		float length = sqrtf(move_x * move_x + move_z * move_z);
+		if (length > 0.0f) {
+			move_x = (move_x / length) * step_size;
+			move_z = (move_z / length) * step_size;
+
+			float new_x = cam->x + move_x;
+			float new_z = cam->z + move_z;
+
+			bool blocked_x = false, blocked_z = false;
+
+			for (size_t j = 0; j < wallcnt; ++j) {
+				const Wall* w = &walls[j];
+				if (collides_x(cam->x, new_x, cam->z, cam->z, w)) blocked_x = true;
+				if (collides_z(cam->x, cam->x, cam->z, new_z, w)) blocked_z = true;
+			}
+
+			if (!blocked_x) cam->x = new_x;
+			if (!blocked_z) cam->z = new_z;
+		}
 	}
 
 	// recover sprint on idle
@@ -135,6 +162,7 @@ static void move_camera(Camera* cam, Uint8 const* keystate, const Wall* walls, s
 		cam->sprint_limit = min_u32(cam->sprint_limit + 1, MAX_SPRINT_LIMIT);
 	}
 }
+
 
 
 static void rotate_camera(Camera* cam, Uint8 const* keystate)
