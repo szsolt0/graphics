@@ -26,7 +26,7 @@ int init_lightning(void)
 
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
-	glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 20.0f);
+	glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 1.0f);
 	glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 10.0f);
 
 	return 0;
@@ -68,13 +68,13 @@ void update_light_level(int8_t* lvl, double current_time, double* last_light_upd
 
 	const Uint8* const keystate = SDL_GetKeyboardState(NULL);
 
-	if (keystate[SDL_SCANCODE_KP_PLUS]) {
+	if (keystate[SDL_SCANCODE_KP_PLUS] || keystate[SDL_SCANCODE_EQUALS]) {
 		*lvl = (*lvl == MAX_LIGHT_LVL) ? MAX_LIGHT_LVL : (*lvl + 1);
 		*last_light_update_time = current_time;
 		return;
 	}
 
-	if (keystate[SDL_SCANCODE_KP_MINUS]) {
+	if (keystate[SDL_SCANCODE_KP_MINUS] || keystate[SDL_SCANCODE_MINUS]) {
 		*lvl = (*lvl == 0) ? 0 : (*lvl - 1);
 		*last_light_update_time = current_time;
 		return;

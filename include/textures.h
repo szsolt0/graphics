@@ -3,13 +3,12 @@
 #include <stddef.h>
 
 enum {
-	TexShadow     = 0,
+	TexHelpMenu   = 0,
 	TexWallNormal = 1,
 	TexRoof       = 2,
 	TexFloor      = 3,
+	TEXTURES_LEN  = 4,
 };
-
-#define TEXTURES_LEN 4
 
 typedef struct Textures
 {

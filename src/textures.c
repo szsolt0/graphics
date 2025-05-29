@@ -16,6 +16,7 @@ typedef struct TextureFileMapEntry
 } TextureFileMapEntry;
 
 static const TextureFileMapEntry texture_file_map[] = {
+	{TexHelpMenu,   BASE_DIR "help_menu.png"},
 	{TexWallNormal, BASE_DIR "wall.png"},
 	{TexFloor,      BASE_DIR "floor.png"},
 	{TexRoof,       BASE_DIR "roof.png"},

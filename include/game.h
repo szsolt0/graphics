@@ -20,13 +20,14 @@ typedef struct Game
 	size_t walls_len;
 	SDL_GLContext gl_context;
 	double last_update_time;
-	double last_light_update_time;
+	double last_keypress_time;
 	Uint32 width;
 	Uint32 height;
 	Textures textures;
 	Camera camera;
 	int8_t light_level;
 	bool is_running;
+	bool show_help_menu;
 } Game;
 
 void init_game(Game* game, Uint32 width, Uint32 height);

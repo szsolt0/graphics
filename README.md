@@ -30,6 +30,7 @@ make windows
 
 ## Controls
 
+- `F1`: help
 - mouse: look arround
 - `w`, `a`, `s`, `d`: move
 - `<shift>`: run

@@ -2,6 +2,7 @@
 #include <utils.h>
 #include <walls.h>
 #include <light.h>
+#include <help_menu.h>
 
 #include <GL/gl.h>
 
@@ -32,6 +33,8 @@ void init_game(Game* game, Uint32 width, Uint32 height)
 	game->last_update_time = (double)SDL_GetTicks() / 1000;
 	game->camera.sprint_limit = MAX_SPRINT_LIMIT;
 
+	game->light_level = 8;
+
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
 	if (!game->window) {
@@ -45,6 +48,11 @@ void init_game(Game* game, Uint32 width, Uint32 height)
 
 	if (init_textures(&game->textures) != 0) {
 		fprintf(stderr, "[ERROR] texture loading failed\n");
+		return;
+	}
+
+	if (init_help_menu() != 0) {
+		fprintf(stderr, "[ERROR] help menu init failed\n");
 		return;
 	}
 
@@ -91,6 +99,10 @@ void handle_game_events(Game* game)
 		if (event.type == SDL_MOUSEMOTION) {
 			handle_mouse_motion(game, &event);
 		}
+
+		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F1) {
+			game->show_help_menu = !game->show_help_menu;
+		}
 	}
 }
 
@@ -107,7 +119,7 @@ void update_game(Game* game)
 	const double elapsed_time = fabs(current_time - game->last_update_time);
 
 	update_camera(&game->camera, game->walls, game->walls_len);
-	update_light_level(&game->light_level, current_time, &game->last_light_update_time);
+	update_light_level(&game->light_level, current_time, &game->last_keypress_time);
 
 	game->last_update_time = current_time;
 }
@@ -122,6 +134,7 @@ void render_game(Game* game)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+
 	apply_camera_transform(cam);
 
 
@@ -131,6 +144,10 @@ void render_game(Game* game)
 	render_floor(game->textures.ids[TexFloor]);
 	render_roof(game->textures.ids[TexRoof]);
 	render_walls(game->walls, game->walls_len, game->textures.ids[TexWallNormal]);
+
+	if (game->show_help_menu) {
+		render_help_menu(game->textures.ids[TexHelpMenu], game->width, game->height);
+	}
 
 	SDL_GL_SwapWindow(game->window);
 }
@@ -174,6 +191,7 @@ static int init_opengl(Game* game)
 {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
 
 	init_lightning();
 
