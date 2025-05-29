@@ -9,89 +9,29 @@
 #include <math.h>
 #include <stdio.h>
 
-// old variant, not the best :(
-/*static bool collides_x(float prev_x, const float next_x, const float prev_z, const float next_z, const Wall* wall) {
-	const float WALL_THICKNESS = 0.2;
 
-	if ((wall->x0 - wall->x1) > 0.001f) {
-		// z collider, not interested
-		return false;
-	}
+static bool aabb_intersect(float ax, float az, float aradius, float bx0, float bz0, float bx1, float bz1) {
+    float amin_x = ax - aradius;
+    float amax_x = ax + aradius;
+    float amin_z = az - aradius;
+    float amax_z = az + aradius;
 
-	const float wall_x = wall->x0;
+    float bmin_x = fminf(bx0, bx1);
+    float bmax_x = fmaxf(bx0, bx1);
+    float bmin_z = fminf(bz0, bz1);
+    float bmax_z = fmaxf(bz0, bz1);
 
-	const float min_z = fmin(wall->z0, wall->z1);
-	const float max_z = fmax(wall->z0, wall->z1);
-
-	if (min_z <= prev_z && prev_z <= max_z) {
-		// wall is in "front" of us
-
-		float min_x = wall_x - WALL_THICKNESS / 2.0f;
-		float max_x = wall_x + WALL_THICKNESS / 2.0f;
-
-		if (min_x <= next_x && next_x <= max_x) {
-			return true;
-		}
-	}
-
-	return false;
-}*/
-
-static bool collides_x(float prev_x, const float next_x, const float prev_z, const float next_z, const Wall* wall) {
-	const float WALL_THICKNESS = 0.2f;
-	const float CAMERA_RADIUS = 0.1f;
-
-	// only x colliders
-	if (fabsf(wall->x0 - wall->x1) > 0.001f) {
-		return false;
-	}
-
-	const float wall_x = wall->x0;
-	const float min_z = fminf(wall->z0, wall->z1) - CAMERA_RADIUS;
-	const float max_z = fmaxf(wall->z0, wall->z1) + CAMERA_RADIUS;
-
-	if ((prev_z >= min_z && prev_z <= max_z) || (next_z >= min_z && next_z <= max_z)) {
-		const float min_x = wall_x - WALL_THICKNESS / 2.0f - CAMERA_RADIUS;
-		const float max_x = wall_x + WALL_THICKNESS / 2.0f + CAMERA_RADIUS;
-
-		if (next_x >= min_x && next_x <= max_x) {
-			return true;
-		}
-	}
-
-	return false;
+    return (
+		amax_x > bmin_x && amin_x < bmax_x &&
+		amax_z > bmin_z && amin_z < bmax_z
+	);
 }
-
-
-static bool collides_z(float prev_x, const float next_x, const float prev_z, const float next_z, const Wall* wall) {
-	const float WALL_THICKNESS = 0.2f;
-	const float CAMERA_RADIUS = 0.1f;
-
-	// only z colliders
-	if (fabsf(wall->z0 - wall->z1) > 0.001f) {
-		return false;
-	}
-
-	const float wall_z = wall->z0;
-	const float min_x = fminf(wall->x0, wall->x1) - CAMERA_RADIUS;
-	const float max_x = fmaxf(wall->x0, wall->x1) + CAMERA_RADIUS;
-
-	if ((prev_x >= min_x && prev_x <= max_x) || (next_x >= min_x && next_x <= max_x)) {
-		const float min_z = wall_z - WALL_THICKNESS / 2.0f - CAMERA_RADIUS;
-		const float max_z = wall_z + WALL_THICKNESS / 2.0f + CAMERA_RADIUS;
-
-		if (next_z >= min_z && next_z <= max_z) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
 
 
 static void move_camera(Camera* cam, Uint8 const* keystate, const Wall* walls, size_t wallcnt)
 {
+	const float CAMERA_RADIUS = 0.1;
+
 	float speed = 0.1f;
 	bool is_moving = false;
 
@@ -141,19 +81,44 @@ static void move_camera(Camera* cam, Uint8 const* keystate, const Wall* walls, s
 			move_x = (move_x / length) * step_size;
 			move_z = (move_z / length) * step_size;
 
-			float new_x = cam->x + move_x;
-			float new_z = cam->z + move_z;
-
-			bool blocked_x = false, blocked_z = false;
+			bool block_full = false;
+			bool block_x = false;
+			bool block_z = false;
 
 			for (size_t j = 0; j < wallcnt; ++j) {
 				const Wall* w = &walls[j];
-				if (collides_x(cam->x, new_x, cam->z, cam->z, w)) blocked_x = true;
-				if (collides_z(cam->x, cam->x, cam->z, new_z, w)) blocked_z = true;
+
+				float wall_thickness = 0.2f;
+				float pad = wall_thickness / 2.0f;
+
+				float wx0 = fminf(w->x0, w->x1) - pad;
+				float wx1 = fmaxf(w->x0, w->x1) + pad;
+				float wz0 = fminf(w->z0, w->z1) - pad;
+				float wz1 = fmaxf(w->z0, w->z1) + pad;
+
+				// block full movement
+				if (aabb_intersect(cam->x + move_x, cam->z + move_z, CAMERA_RADIUS, wx0, wz0, wx1, wz1)) {
+					block_full = true;
+				}
+
+				// block x movement
+				if (aabb_intersect(cam->x + move_x, cam->z, CAMERA_RADIUS, wx0, wz0, wx1, wz1)) {
+					block_x = true;
+				}
+
+				// block z movement
+				if (aabb_intersect(cam->x, cam->z + move_z, CAMERA_RADIUS, wx0, wz0, wx1, wz1)) {
+					block_z = true;
+				}
 			}
 
-			if (!blocked_x) cam->x = new_x;
-			if (!blocked_z) cam->z = new_z;
+			if (!block_full) {
+				cam->x += move_x;
+				cam->z += move_z;
+			} else {
+				if (!block_x) cam->x += move_x;
+				if (!block_z) cam->z += move_z;
+			}
 		}
 	}
 
