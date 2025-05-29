@@ -10,6 +10,9 @@ The maze walls are statically defined in the file `src/walls.c`, within the cons
 However, the structure of the code allows for rewriting with dynamic wall loading by modifying only the `load_walls`
 function, without affecting other parts of the program.
 
+An animated cube is located at coordinates x = -20, z = -20.
+After reaching the exit, it can be discovered by heading diagonally forward and to the left.
+
 ## Assets
 
 Assets can be downloaded from here:
